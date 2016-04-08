@@ -1,0 +1,28 @@
+[Unit]
+Description=Docker Application Container Engine
+Documentation=http://docs.docker.com
+After=network.target
+Wants=docker-storage-setup.service
+Conflicts=docker.service
+
+[Service]
+Type=notify
+EnvironmentFile=-/etc/sysconfig/docker-latest
+EnvironmentFile=-/etc/sysconfig/docker-latest-storage
+EnvironmentFile=-/etc/sysconfig/docker-latest-network
+Environment=GOTRACEBACK=crash
+ExecStart=/bin/sh -c '/usr/bin/docker-latest daemon \
+          --exec-opt native.cgroupdriver=systemd \
+          $OPTIONS \
+          $DOCKER_STORAGE_OPTIONS \
+          $DOCKER_NETWORK_OPTIONS \
+          $INSECURE_REGISTRY \
+          2>&1 | /usr/bin/forward-journald -tag docker'
+LimitNOFILE=1048576
+LimitNPROC=1048576
+LimitCORE=infinity
+TimeoutStartSec=0
+Restart=on-abnormal
+
+[Install]
+WantedBy=multi-user.target
