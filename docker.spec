@@ -1,10 +1,8 @@
 %if 0%{?fedora}
 %global with_devel 1
-%global with_debug 1
 %global with_unit_test 1
 %else
 %global with_devel 0
-%global with_debug 0
 %global with_unit_test 0
 %endif
 
@@ -37,70 +35,20 @@
 %global shortcommit1 %(c=%{commit1}; echo ${c:0:7})
 %global dss_libdir %{_exec_prefix}/lib/%{repo}-storage-setup
 
-# docker-selinux
-%global git2 https://github.com/projectatomic/%{repo}-selinux
-%global commit2 8718b6204b7e9ffd151230380fe3dc71f58e14d3
-%global shortcommit2 %(c=%{commit2}; echo ${c:0:7})
-
-# docker-utils
-%global git3 https://github.com/vbatts/%{repo}-utils
-%global commit3 b851c03ddae1db30a4acf5e4cc5e31b6a671af35
-%global shortcommit3 %(c=%{commit3}; echo ${c:0:7})
-
 # docker-novolume-plugin
 %global git4 https://github.com/projectatomic/%{repo}-novolume-plugin
 %global commit4 77a55c1e22563a4b87d426bb89e7c9144c966742
 %global shortcommit4 %(c=%{commit4}; echo ${c:0:7})
 
-# v1.10-migrator
-%global git5 https://github.com/%{repo}/v1.10-migrator
-%global commit5 994c35cbf7ae094d4cb1230b85631ecedd77b0d8
-%global shortcommit5 %(c=%{commit5}; echo ${c:0:7})
-
-# forward-journald
-%global git6 https://github.com/projectatomic/forward-journald
-%global commit6  77e02a9774a6ca054e41c27f6f319d701f1cbaea
-%global shortcommit6 %(c=%{commit6}; echo ${c:0:7})
-
-# docker-selinux stuff (prefix with ds_ for version/release etc.)
-# Some bits borrowed from the openstack-selinux package
-%global selinuxtype targeted
-%global moduletype services
-%global modulenames %{repo}
-
-# Usage: _format var format
-# Expand 'modulenames' into various formats as needed
-# Format must contain '$x' somewhere to do anything useful
-%global _format() export %1=""; for x in %{modulenames}; do %1+=%2; %1+=" "; done;
-
-# Relabel files
-%global relabel_files() %{_sbindir}/restorecon -R %{_bindir}/%{repo} %{_localstatedir}/run/%{repo}.sock %{_localstatedir}/run/%{repo}.pid %{_sysconfdir}/%{repo} %{_localstatedir}/log/%{repo} %{_localstatedir}/log/lxc %{_localstatedir}/lock/lxc %{_unitdir}/%{repo}.service %{_sysconfdir}/%{repo} &> /dev/null || :
-
-# Version of SELinux we were using
-%if 0%{?fedora} >= 22
-%global selinux_policyver 3.13.1-155
-%else
-%global selinux_policyver 3.13.1-39
-%endif
-
-%if 0%{?centos}
 Name: %{repo}-latest
-%else
-Name: %{repo}
-%endif
-Epoch: 2
 Version: 1.10.3
-Release: 5.git%{shortcommit0}%{?dist}
+Release: 6.git%{shortcommit0}%{?dist}
 Summary: Automates deployment of containerized applications
 License: ASL 2.0
 URL: https://%{provider}.%{provider_tld}/projectatomic/%{repo}
-# Temp fix for rhbz#1315903
-#ExclusiveArch: %%{go_arches}
-ExclusiveArch: %{ix86} x86_64 %{arm} aarch64 ppc64le s390x %{mips}
+ExclusiveArch: x86_64
 Source0: %{git0}/archive/%{commit0}/%{repo}-%{shortcommit0}.tar.gz
 Source1: %{git1}/archive/%{commit1}/%{repo}-storage-setup-%{shortcommit1}.tar.gz
-Source2: %{git2}/archive/%{commit2}/%{repo}-selinux-%{shortcommit2}.tar.gz
-Source3: %{git3}/archive/%{commit3}/%{repo}-utils-%{shortcommit3}.tar.gz
 Source4: %{git4}/archive/%{commit4}/%{repo}-novolume-plugin-%{shortcommit4}.tar.gz
 Source5: %{repo}.service
 Source6: %{repo}.sysconfig
@@ -108,76 +56,42 @@ Source7: %{repo}-storage.sysconfig
 Source8: %{repo}-logrotate.sh
 Source9: README.%{name}-logrotate
 Source10: %{repo}-network.sysconfig
-Source11: %{git5}/archive/%{commit5}/v1.10-migrator-%{shortcommit5}.tar.gz
-Source12: %{git6}/archive/%{commit6}/forward-journald-%{shortcommit6}.tar.gz
-
-%if 0%{?with_debug}
-# Build with debug
-#Patch0:      build-with-debug-info.patch
-%endif
 
 BuildRequires: git
 BuildRequires: glibc-static
 BuildRequires: go-md2man
-BuildRequires: godep
+BuildRequires: libseccomp-devel
 BuildRequires: device-mapper-devel
-BuildRequires: libseccomp-static >= 2.3.0
 BuildRequires: pkgconfig(audit)
 BuildRequires: btrfs-progs-devel
 BuildRequires: sqlite-devel
 BuildRequires: pkgconfig(systemd)
-%if %{go_compiler}
-BuildRequires: compiler(go-compiler)
-%else
-%ifarch %{golang_arches}
 BuildRequires: golang >= 1.4.2
-%else
-BuildRequires: gcc-go >= %{gccgo_min_vers}
-%endif
-%endif
-%if 0%{?fedora} >= 21
-# Resolves: rhbz#1165615
-Requires: device-mapper-libs >= 1.02.90-1
-%endif
+Requires: device-mapper-libs >= 7:1.02.97
 
 # RE: rhbz#1195804 - ensure min NVR for selinux-policy
 Requires: selinux-policy >= %{selinux_policyver}
-Requires: %{name}-selinux = %{epoch}:%{version}-%{release}
+Requires: %{repo}-selinux >= 1.9.1
 
 # Resolves: rhbz#1045220
 Requires: xz
-Provides: lxc-%{repo} = %{epoch}:%{version}-%{release}
+Provides: lxc-%{repo} = %{version}-%{release}
 
 # Match with upstream name
 Provides: %{repo}-engine = %{version}-%{release}
 
-Requires: %{name}-forward-journald = %{epoch}:%{version}-%{release}
+Requires: %{repo}-forward-journald >= 1.9.1
 
 # needs tar to be able to run containers
 Requires: tar
 
-# permitted by https://fedorahosted.org/fpc/ticket/341#comment:7
-# In F22, the whole package should be renamed to be just "docker" and
-# this changed to "Provides: docker-io".
-%if 0%{?fedora} >= 22
-Provides: %{repo}-io = %{epoch}:%{version}-%{release}
-Obsoletes: %{repo}-io <= 1.5.0-19
-%endif
+#Requires: %{repo}-utils
 
 # include d-s-s into main docker package and obsolete existing d-s-s rpm
 # also update BRs and Rs
-Requires: lvm2
+Requires: lvm2 >= 7:1.02.97
 Requires: xfsprogs
 Obsoletes: %{repo}-storage-setup <= 0.5-3
-
-Requires(pre): %{repo}-v1.10-migrator
-
-Requires: libseccomp >= 2.3.0
-
-%if 0%{?fedora}
-Recommends: oci-register-machine
-Recommends: oci-systemd-hook
-%endif
 
 %description
 Docker is an open-source engine that automates the deployment of any
@@ -189,174 +103,6 @@ and between virtually any server. The same container that a developer builds
 and tests on a laptop will run at scale, in production*, on VMs, bare-metal
 servers, OpenStack clusters, public instances, or combinations of the above.
 
-%if 0%{?with_devel}
-%package devel
-%ifarch %{golang_arches}
-BuildRequires: golang >= 1.2.1-3
-%else
-BuildRequires: gcc-go >= %{gccgo_min_vers}
-%endif
-Provides: %{repo}-io-devel = %{epoch}:%{version}-%{release}
-Provides: %{repo}-pkg-devel = %{epoch}:%{version}-%{release}
-Provides: %{repo}-io-pkg-devel = %{epoch}:%{version}-%{release}
-Summary:  A golang registry for global request variables (source libraries)
-
-Provides: golang(%{import_path}/api) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/api/client) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/api/client/formatter) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/api/client/inspect) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/api/server) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/api/server/httputils) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/api/server/router) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/api/server/router/build) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/api/server/router/container) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/api/server/router/local) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/api/server/router/network) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/api/server/router/system) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/api/server/router/volume) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/builder) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/builder/dockerfile) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/builder/dockerfile/command) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/builder/dockerfile/parser) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/builder/dockerignore) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/cli) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/cliconfig) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/container) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/daemonbuilder) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/events) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/exec) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/execdriver) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/execdriver/dockerhooks) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/execdriver/execdrivers) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/execdriver/native) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/execdriver/native/template) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/execdriver/windows) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/graphdriver) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/graphdriver/aufs) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/graphdriver/btrfs) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/graphdriver/devmapper) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/graphdriver/graphtest) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/graphdriver/overlay) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/graphdriver/register) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/graphdriver/vfs) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/graphdriver/windows) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/graphdriver/zfs) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/links) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/logger) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/logger/awslogs) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/logger/fluentd) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/logger/gelf) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/logger/journald) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/logger/jsonfilelog) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/logger/loggerutils) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/logger/splunk) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/logger/syslog) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/daemon/network) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/distribution) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/distribution/metadata) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/distribution/xfer) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/docker-utils-dab51acd1b1a77f7cb01a1b7e2129ec85c846b71/dockerfile) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/docker-utils-dab51acd1b1a77f7cb01a1b7e2129ec85c846b71/opts) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/docker-utils-dab51acd1b1a77f7cb01a1b7e2129ec85c846b71/registry) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/docker-utils-dab51acd1b1a77f7cb01a1b7e2129ec85c846b71/registry/fetch) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/docker-utils-dab51acd1b1a77f7cb01a1b7e2129ec85c846b71/sum) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/docker-utils-dab51acd1b1a77f7cb01a1b7e2129ec85c846b71/version) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/dockerversion) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/errors) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/image) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/image/tarexport) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/image/v1) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/layer) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/migrate/v1) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/opts) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/aaparser) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/archive) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/audit) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/authorization) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/broadcaster) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/chrootarchive) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/devicemapper) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/directory) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/discovery) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/discovery/file) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/discovery/kv) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/discovery/memory) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/discovery/nodes) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/filenotify) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/fileutils) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/gitutils) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/graphdb) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/homedir) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/httputils) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/idtools) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/integration) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/integration/checker) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/ioutils) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/jsonlog) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/jsonmessage) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/locker) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/longpath) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/loopback) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/mflag) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/mount) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/namesgenerator) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/parsers) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/parsers/kernel) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/parsers/operatingsystem) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/pidfile) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/platform) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/plugins) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/plugins/pluginrpc-gen/fixtures) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/pools) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/progress) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/promise) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/proxy) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/pubsub) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/random) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/reexec) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/registrar) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/rpm) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/signal) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/stdcopy) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/streamformatter) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/stringid) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/stringutils) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/symlink) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/sysinfo) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/system) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/tailfile) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/tarsum) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/term) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/term/windows) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/tlsconfig) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/truncindex) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/urlutil) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/useragent) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/pkg/version) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/reference) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/registry) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/runconfig) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/runconfig/opts) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/utils) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/volume) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/volume/drivers) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/volume/local) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/volume/store) = %{epoch}:%{version}-%{release}
-Provides: golang(%{import_path}/volume/testutils) = %{epoch}:%{version}-%{release}
-
-%description devel
-%{summary}
-
-This package provides the source libraries for Docker.
-%endif
-
-%package utils
-Summary: External utilities for the %{repo} experience
-
-%description utils
-%{summary}
-
 %if 0%{?with_unit_test}
 %package unit-test
 Summary: %{summary} - for running unit tests
@@ -365,19 +111,10 @@ Summary: %{summary} - for running unit tests
 %{summary} - for running unit tests
 %endif
 
-%package fish-completion
-Summary: fish completion files for Docker
-Requires: %{repo} = %{epoch}:%{version}-%{release}
-Requires: fish
-Provides: %{repo}-io-fish-completion = %{epoch}:%{version}-%{release}
-
-%description fish-completion
-This package installs %{summary}.
-
 %package logrotate
 Summary: cron job to run logrotate on Docker containers
-Requires: %{repo} = %{epoch}:%{version}-%{release}
-Provides: %{repo}-io-logrotate = %{epoch}:%{version}-%{release}
+Requires: %{repo} = %{version}-%{release}
+Provides: %{repo}-io-logrotate = %{version}-%{release}
 
 %description logrotate
 This package installs %{summary}. logrotate is assumed to be installed on
@@ -387,7 +124,7 @@ containers for this to work, failures are silently ignored.
 URL: %{git4}
 License: MIT
 Summary: Block container starts with local volumes defined
-Requires: %{repo} = %{epoch}:%{version}-%{release}
+Requires: %{repo} = %{version}-%{release}
 
 %description novolume-plugin
 When a volume in provisioned via the `VOLUME` instruction in a Dockerfile or
@@ -408,69 +145,6 @@ local volumes defined. In particular, the plugin will block `docker run` with:
 
 The only thing allowed will be just bind mounts.
 
-%package selinux
-URL: %{git2} 
-Summary: SELinux policies for Docker
-BuildRequires: selinux-policy
-BuildRequires: selinux-policy-devel
-Requires(post): selinux-policy-base >= %{selinux_policyver}
-Requires(post): policycoreutils
-%if 0%{?fedora}
-Requires(post): policycoreutils-python-utils
-%else
-Requires(post): policycoreutils-python
-%endif
-Requires(post): libselinux-utils
-Provides: %{repo}-io-selinux = %{epoch}:%{version}-%{release}
-
-%description selinux
-SELinux policy modules for use with Docker.
-
-%package vim
-Summary: vim syntax highlighting files for Docker
-Requires: %{repo} = %{epoch}:%{version}-%{release}
-Requires: vim
-Provides: %{repo}-io-vim = %{epoch}:%{version}-%{release}
-
-%description vim
-This package installs %{summary}.
-
-%package zsh-completion
-Summary: zsh completion files for Docker
-Requires: %{repo} = %{epoch}:%{version}-%{release}
-Requires: zsh
-Provides: %{repo}-io-zsh-completion = %{epoch}:%{version}-%{release}
-
-%description zsh-completion
-This package installs %{summary}.
-
-%package v1.10-migrator
-Summary: Calculates SHA256 checksums for docker layer content
-License: ASL 2.0 and CC-BY-SA
-
-%description v1.10-migrator
-Starting from v1.10 docker uses content addressable IDs for the images and
-layers instead of using generated ones. This tool calculates SHA256 checksums
-for docker layer content, so that they don't need to be recalculated when the
-daemon starts for the first time.
-
-The migration usually runs on daemon startup but it can be quite slow(usually
-100-200MB/s) and daemon will not be able to accept requests during
-that time. You can run this tool instead while the old daemon is still
-running and skip checksum calculation on startup.
-
-%package forward-journald
-Summary: Forward stdin to journald
-License: ASL 2.0
-
-%description forward-journald
-Forward stdin to journald
-
-The main driver for this program is < go 1.6rc2 has a issue where 10
-SIGPIPE's on stdout or stderr cause go to generate a non-trappable SIGPIPE
-killing the process. This happens when journald is restarted while docker is
-running under systemd.
-
 %prep
 %setup -q -n %{repo}-%{commit0}
 
@@ -480,20 +154,8 @@ cp %{SOURCE9} .
 # untar d-s-s
 tar zxf %{SOURCE1}
 
-# unpack %%{repo}-selinux
-tar zxf %{SOURCE2}
-
-# untar docker-utils
-tar zxf %{SOURCE3}
-
 # untar docker-novolume-plugin
 tar zxf %{SOURCE4}
-
-# untar v1.10-migrator
-tar zxf %{SOURCE11}
-
-# untar forward-journald
-tar zxf %{SOURCE12}
 
 %build
 # set up temporary build gopath, and put our directory there
@@ -501,16 +163,14 @@ mkdir _build
 pushd _build
 mkdir -p src/%{provider}.%{provider_tld}/{%{repo},projectatomic,vbatts}
 ln -s $(dirs +1 -l) src/%{import_path}
-ln -s $(dirs +1 -l)/%{repo}-utils-%{commit3} src/%{provider}.%{provider_tld}/vbatts/%{repo}-utils
 ln -s $(dirs +1 -l)/%{repo}-novolume-plugin-%{commit4} src/%{provider}.%{provider_tld}/projectatomic/%{repo}-novolume-plugin
-ln -s $(dirs +1 -l)/forward-journald-%{commit6} src/%{provider}.%{provider_tld}/projectatomic/forward-journald
 popd
 
 export DOCKER_GITCOMMIT="%{shortcommit0}/%{version}"
-export DOCKER_BUILDTAGS="selinux seccomp"
+export DOCKER_BUILDTAGS="selinux"
 export GOPATH=$(pwd)/_build:$(pwd)/vendor:%{gopath}:$(pwd)/%{repo}-novolume-plugin-%{commit4}/Godeps/_workspace
 
-DEBUG=1 bash -x hack/make.sh dynbinary
+DOCKER_DEBUG=1 bash -x hack/make.sh dynbinary
 man/md2man-all.sh
 pushd man/man1
 rename %{repo} %{name} *
@@ -526,31 +186,12 @@ cp contrib/syntax/vim/README.md README-vim-syntax.md
 go-md2man -in %{repo}-novolume-plugin-%{commit4}/man/%{repo}-novolume-plugin.8.md -out %{name}-novolume-plugin.8
 
 pushd $(pwd)/_build/src
-go build -ldflags "-B 0x$(head -c20 /dev/urandom|od -An -tx1|tr -d ' \n')" github.com/vbatts/%{repo}-utils/cmd/%{repo}-fetch
-go build -ldflags "-B 0x$(head -c20 /dev/urandom|od -An -tx1|tr -d ' \n')" github.com/vbatts/%{repo}-utils/cmd/%{repo}tarsum
 go build -ldflags "-B 0x$(head -c20 /dev/urandom|od -An -tx1|tr -d ' \n')" github.com/projectatomic/%{repo}-novolume-plugin
-go build -ldflags "-B 0x$(head -c20 /dev/urandom|od -An -tx1|tr -d ' \n')" github.com/projectatomic/forward-journald
-popd
-
-# build %%{repo}-selinux
-pushd %{repo}-selinux-%{commit2}
-make SHARE="%{_datadir}" TARGETS="%{modulenames}"
-popd
-
-# build v1.10-migrator
-pushd v1.10-migrator-%{commit5}
-make v1.10-migrator-local
 popd
 
 %install
 # install binary
 install -d %{buildroot}%{_bindir}
-
-# install utils and forward-journald
-install -p -m 755 _build/src/%{repo}-fetch %{buildroot}%{_bindir}/%{name}-fetch
-install -p -m 755 _build/src/%{repo}tarsum %{buildroot}%{_bindir}/%{repo}tarsum-latest
-install -p -m 700 _build/src/forward-journald %{buildroot}%{_bindir}
-
 
 for x in bundles/latest; do
     if ! test -d $x/dynbinary; then
@@ -621,11 +262,6 @@ install -p -m 644 %{SOURCE6} %{buildroot}%{_sysconfdir}/sysconfig/%{name}
 install -p -m 644 %{SOURCE10} %{buildroot}%{_sysconfdir}/sysconfig/%{name}-network
 install -p -m 644 %{SOURCE7} %{buildroot}%{_sysconfdir}/sysconfig/%{name}-storage
 
-# install policy modules
-%_format MODULES $x.pp.bz2
-install -d %{buildroot}%{_datadir}/selinux/packages
-install -m 0644 %{repo}-selinux-%{commit2}/$MODULES %{buildroot}%{_datadir}/selinux/packages
-
 %if 0%{?with_unit_test}
 install -d -m 0755 %{buildroot}%{_sharedstatedir}/%{name}-unit-test/
 cp -pav VERSION Dockerfile %{buildroot}%{_sharedstatedir}/%{name}-unit-test/.
@@ -650,9 +286,6 @@ for dir in */ ; do
 done
 %endif
 
-# remove %%{repo}-selinux rpm spec file
-rm -rf %{repo}-selinux-%{commit2}/%{repo}-selinux.spec
-
 # install %%{repo} config directory
 install -dp %{buildroot}%{_sysconfdir}/%{name}
 
@@ -671,10 +304,6 @@ install -d %{buildroot}%{_sysconfdir}/sysconfig
 install -p -m 644 %{repo}-storage-setup-override.conf %{buildroot}%{_sysconfdir}/sysconfig/%{name}-storage-setup
 popd
 
-# install v1.10-migrator
-install -d %{buildroot}%{_bindir}
-install -p -m 700 v1.10-migrator-%{commit5}/v1.10-migrator-local %{buildroot}%{_bindir}
-
 %check
 [ ! -w /run/%{name}.sock ] || {
     mkdir test_dir
@@ -689,39 +318,11 @@ install -p -m 700 v1.10-migrator-%{commit5}/v1.10-migrator-local %{buildroot}%{_
 %post
 %systemd_post %{name}
 
-%post selinux
-# Install all modules in a single transaction
-if [ $1 -eq 1 ]; then
-    %{_sbindir}/setsebool -P -N virt_use_nfs=1 virt_sandbox_use_all_caps=1
-fi
-%_format MODULES %{_datadir}/selinux/packages/$x.pp.bz2
-%{_sbindir}/semodule -n -s %{selinuxtype} -i $MODULES
-if %{_sbindir}/selinuxenabled ; then
-    %{_sbindir}/load_policy
-    %relabel_files
-    if [ $1 -eq 1 ]; then
-    restorecon -R %{_sharedstatedir}/%{name} &> /dev/null || :
-    fi
-fi
-
 %preun
 %systemd_preun %{name}
 
 %postun
 %systemd_postun_with_restart %{name}
-
-%postun selinux
-if [ $1 -eq 0 ]; then
-%{_sbindir}/semodule -n -r %{modulenames} &> /dev/null || :
-if %{_sbindir}/selinuxenabled ; then
-%{_sbindir}/load_policy
-%relabel_files
-fi
-fi
-
-%triggerpost -n %{repo}-v1.10-migrator -- %{name} < %{version}
-%{_bindir}/v1.10-migrator-local 2>/dev/null
-exit 0
 
 #define license tag if not already defined
 %{!?_licensedir:%global license %doc}
@@ -748,6 +349,12 @@ exit 0
 %{_bindir}/%{name}-storage-setup
 %dir %{dss_libdir}
 %{dss_libdir}/*
+%{_datadir}/vim/vimfiles/doc/%{repo}file-latest.txt
+%{_datadir}/vim/vimfiles/ftdetect/%{repo}file-latest.vim
+%{_datadir}/vim/vimfiles/syntax/%{repo}file-latest.vim
+%dir %{_datadir}/fish/vendor_completions.d/
+%{_datadir}/fish/vendor_completions.d/%{name}.fish
+%{_datadir}/zsh/site-functions/_%{name}
 
 %if 0%{?with_devel}
 %files devel
@@ -762,10 +369,6 @@ exit 0
 %{_sharedstatedir}/%{name}-unit-test/
 %endif
 
-%files fish-completion
-%dir %{_datadir}/fish/vendor_completions.d/
-%{_datadir}/fish/vendor_completions.d/%{name}.fish
-
 %files logrotate
 %doc README.%{name}-logrotate
 %{_sysconfdir}/cron.daily/%{name}-logrotate
@@ -777,33 +380,12 @@ exit 0
 %{_unitdir}/%{name}-novolume-plugin.service
 %{_unitdir}/%{name}-novolume-plugin.socket
 
-%files selinux
-%doc %{repo}-selinux-%{commit2}/README.md
-%{_datadir}/selinux/*
-
-%files vim
-%{_datadir}/vim/vimfiles/doc/%{repo}file-latest.txt
-%{_datadir}/vim/vimfiles/ftdetect/%{repo}file-latest.vim
-%{_datadir}/vim/vimfiles/syntax/%{repo}file-latest.vim
-
-%files zsh-completion
-%{_datadir}/zsh/site-functions/_%{name}
-
-%files utils
-%{_bindir}/%{name}-fetch
-%{_bindir}/%{repo}tarsum-latest
-
-%files v1.10-migrator
-%license v1.10-migrator-%{commit5}/LICENSE.{code,docs}
-%doc v1.10-migrator-%{commit5}/{CONTRIBUTING,README}.md
-%{_bindir}/v1.10-migrator-local
-
-%files forward-journald
-%license forward-journald-%{commit6}/LICENSE
-%doc forward-journald-%{commit6}/README.md
-%{_bindir}/forward-journald
-
 %changelog
+* Fri Apr 08 2016 Lokesh Mandvekar <lsm5@fedoraproject.org> - 1.10.3-6.gitf8a9a2a
+- remove selinux, forward-journald, utils and v1.10-migrator subpacakges
+- use selinux, utils and forward-journald subpackages from 'docker' package
+- Epoch not needed in RHEL, removed
+
 * Thu Apr 07 2016 Lokesh Mandvekar <lsm5@fedoraproject.org> - 2:1.10.3-5.gitf8a9a2a
 - 'docker-latest' package for v1.10.3
 
