@@ -33,7 +33,7 @@
 %global git1 https://github.com/projectatomic/%{repo}-storage-setup/
 %global commit1 ac50cee05cec521a0b23ebe16d0f5376e4b6a8cc
 %global shortcommit1 %(c=%{commit1}; echo ${c:0:7})
-%global dss_libdir %{_exec_prefix}/lib/%{repo}-storage-setup
+%global dss_libdir %{_exec_prefix}/lib/%{name}-storage-setup
 
 # docker-novolume-plugin
 %global git4 https://github.com/projectatomic/%{repo}-novolume-plugin
@@ -239,7 +239,15 @@ install -p contrib/udev/80-%{repo}.rules %{buildroot}%{_udevrulesdir}/80-%{name}
 install -d %{buildroot}%{_sharedstatedir}/%{name}
 
 # install secret patch directory
-install -d %{buildroot}%{_datadir}/rhel/secrets
+install -d -p -m 750 %{buildroot}/%{_datadir}/rhel/secrets
+# rhbz#1110876 - update symlinks for subscription management
+ln -s %{_sysconfdir}/pki/entitlement %{buildroot}%{_datadir}/rhel/secrets/etc-pki-entitlement
+ln -s %{_sysconfdir}/rhsm %{buildroot}%{_datadir}/rhel/secrets/rhsm
+ln -s %{_sysconfdir}/yum.repos.d/redhat.repo %{buildroot}%{_datadir}/rhel/secrets/rhel7.repo
+
+mkdir -p %{buildroot}/etc/%{name}/certs.d/redhat.{com,io}
+ln -s %{_sysconfdir}/rhsm/ca/redhat-uep.pem %{buildroot}/%{_sysconfdir}/%{name}/certs.d/redhat.com/redhat-ca.crt
+ln -s %{_sysconfdir}/rhsm/ca/redhat-uep.pem %{buildroot}/%{_sysconfdir}/%{name}/certs.d/redhat.io/redhat-ca.crt
 
 # install systemd/init scripts
 install -d %{buildroot}%{_unitdir}
@@ -288,6 +296,7 @@ install -dp %{buildroot}%{_sysconfdir}/%{name}
 
 # install d-s-s
 pushd %{repo}-storage-setup-%{commit1}
+sed -i 's/%{repo}/%{name}/g' %{repo}-storage-setup*
 install -d %{buildroot}%{_bindir}
 install -p -m 755 %{repo}-storage-setup.sh %{buildroot}%{_bindir}/%{name}-storage-setup
 install -d %{buildroot}%{_unitdir}
@@ -334,7 +343,8 @@ popd
 %{_bindir}/%{name}*
 %{_unitdir}/%{name}*
 %{_datadir}/bash-completion/completions/%{name}
-%dir %{_datadir}/rhel/secrets
+%dir %{_datadir}/rhel
+%{_datadir}/rhel/*
 %dir %{_sharedstatedir}/%{name}
 %{_udevrulesdir}/80-%{name}.rules
 %{_sysconfdir}/%{name}
