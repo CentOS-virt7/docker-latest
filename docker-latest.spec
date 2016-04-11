@@ -42,7 +42,7 @@
 
 Name: %{repo}-latest
 Version: 1.10.3
-Release: 7%{?dist}
+Release: 8%{?dist}
 Summary: Automates deployment of containerized applications
 License: ASL 2.0
 URL: https://%{provider}.%{provider_tld}/projectatomic/%{repo}
@@ -111,8 +111,7 @@ Summary: %{summary} - for running unit tests
 
 %package logrotate
 Summary: cron job to run logrotate on Docker containers
-Requires: %{repo} = %{version}-%{release}
-Provides: %{repo}-io-logrotate = %{version}-%{release}
+Requires: %{name} = %{version}-%{release}
 
 %description logrotate
 This package installs %{summary}. logrotate is assumed to be installed on
@@ -122,7 +121,7 @@ containers for this to work, failures are silently ignored.
 URL: %{git4}
 License: MIT
 Summary: Block container starts with local volumes defined
-Requires: %{repo} = %{version}-%{release}
+Requires: %{name} = %{version}-%{release}
 
 %description novolume-plugin
 When a volume in provisioned via the `VOLUME` instruction in a Dockerfile or
@@ -372,6 +371,9 @@ popd
 %{_unitdir}/%{name}-novolume-plugin.*
 
 %changelog
+* Mon Apr 11 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-8
+- logrotate and novolume-plugin should require docker-latest and not docker
+
 * Mon Apr 11 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-7
 - built docker-latest @projectatomic/rhel7-1.10.3 commit#36da459
 - built d-s-s commit#ac50cee
