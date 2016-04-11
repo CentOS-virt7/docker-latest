@@ -26,23 +26,23 @@
 
 # docker
 %global git0 https://github.com/projectatomic/%{repo}
-%global commit0 f8a9a2a9fee151828f9deed04cb40e88bc3b2f56
+%global commit0 36da459cb374202b9b149723721b090b61e86294
 %global shortcommit0 %(c=%{commit0}; echo ${c:0:7})
 
 # d-s-s
 %global git1 https://github.com/projectatomic/%{repo}-storage-setup/
-%global commit1 f087cb16d6751d29821494a86b9ff2f302ae9ea7
+%global commit1 ac50cee05cec521a0b23ebe16d0f5376e4b6a8cc
 %global shortcommit1 %(c=%{commit1}; echo ${c:0:7})
 %global dss_libdir %{_exec_prefix}/lib/%{repo}-storage-setup
 
 # docker-novolume-plugin
 %global git4 https://github.com/projectatomic/%{repo}-novolume-plugin
-%global commit4 77a55c1e22563a4b87d426bb89e7c9144c966742
+%global commit4 7715854b5f3ccfdbf005c9e95d6e9afcaae9376a
 %global shortcommit4 %(c=%{commit4}; echo ${c:0:7})
 
 Name: %{repo}-latest
 Version: 1.10.3
-Release: 6%{?dist}
+Release: 7%{?dist}
 Summary: Automates deployment of containerized applications
 License: ASL 2.0
 URL: https://%{provider}.%{provider_tld}/projectatomic/%{repo}
@@ -372,6 +372,11 @@ popd
 %{_unitdir}/%{name}-novolume-plugin.*
 
 %changelog
+* Mon Apr 11 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-7
+- built docker-latest @projectatomic/rhel7-1.10.3 commit#36da459
+- built d-s-s commit#ac50cee
+- built novolume-plugin commit#7715854
+
 * Fri Apr 08 2016 Lokesh Mandvekar <lsm5@fedoraproject.org> - 1.10.3-6.gitf8a9a2a
 - remove selinux, forward-journald, utils and v1.10-migrator subpacakges
 - use selinux, utils and forward-journald subpackages from 'docker' package
