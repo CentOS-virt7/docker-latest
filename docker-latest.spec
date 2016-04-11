@@ -42,7 +42,7 @@
 
 Name: %{repo}-latest
 Version: 1.10.3
-Release: 6.git%{shortcommit0}%{?dist}
+Release: 6%{?dist}
 Summary: Automates deployment of containerized applications
 License: ASL 2.0
 URL: https://%{provider}.%{provider_tld}/projectatomic/%{repo}
@@ -50,12 +50,12 @@ ExclusiveArch: x86_64
 Source0: %{git0}/archive/%{commit0}/%{repo}-%{shortcommit0}.tar.gz
 Source1: %{git1}/archive/%{commit1}/%{repo}-storage-setup-%{shortcommit1}.tar.gz
 Source4: %{git4}/archive/%{commit4}/%{repo}-novolume-plugin-%{shortcommit4}.tar.gz
-Source5: %{repo}.service
-Source6: %{repo}.sysconfig
-Source7: %{repo}-storage.sysconfig
-Source8: %{repo}-logrotate.sh
+Source5: %{name}.service
+Source6: %{name}.sysconfig
+Source7: %{name}-storage.sysconfig
+Source8: %{name}-logrotate.sh
 Source9: README.%{name}-logrotate
-Source10: %{repo}-network.sysconfig
+Source10: %{name}-network.sysconfig
 
 BuildRequires: git
 BuildRequires: glibc-static
@@ -71,21 +71,19 @@ Requires: device-mapper-libs >= 7:1.02.97
 
 # RE: rhbz#1195804 - ensure min NVR for selinux-policy
 Requires: selinux-policy >= %{selinux_policyver}
-Requires: %{repo}-selinux >= 1.9.1
+Requires: %{repo}-selinux >= 1.9.1-28
+Requires: %{repo}-forward-journald >= 1.9.1-28
+Requires: %{repo}-utils >= 1.9.1-28
 
 # Resolves: rhbz#1045220
 Requires: xz
-Provides: lxc-%{repo} = %{version}-%{release}
+Provides: lxc-%{name} = %{version}-%{release}
 
 # Match with upstream name
-Provides: %{repo}-engine = %{version}-%{release}
-
-Requires: %{repo}-forward-journald >= 1.9.1
+Provides: %{name}-engine = %{version}-%{release}
 
 # needs tar to be able to run containers
 Requires: tar
-
-#Requires: %{repo}-utils
 
 # include d-s-s into main docker package and obsolete existing d-s-s rpm
 # also update BRs and Rs
@@ -246,7 +244,7 @@ install -d %{buildroot}%{_datadir}/rhel/secrets
 
 # install systemd/init scripts
 install -d %{buildroot}%{_unitdir}
-install -p -m 644 %{SOURCE5} %{buildroot}%{_unitdir}/%{name}.service
+install -p -m 644 %{SOURCE5} %{buildroot}%{_unitdir}
 
 # install novolume-plugin executable, unitfile, socket and man
 install -d %{buildroot}/usr/lib/%{name}
@@ -258,9 +256,9 @@ install -p -m 644 %{name}-novolume-plugin.8 %{buildroot}%{_mandir}/man8
 
 # for additional args
 install -d %{buildroot}%{_sysconfdir}/sysconfig/
-install -p -m 644 %{SOURCE6} %{buildroot}%{_sysconfdir}/sysconfig/%{name}
-install -p -m 644 %{SOURCE10} %{buildroot}%{_sysconfdir}/sysconfig/%{name}-network
-install -p -m 644 %{SOURCE7} %{buildroot}%{_sysconfdir}/sysconfig/%{name}-storage
+install -p -m 644 %{SOURCE6} %{buildroot}%{_sysconfdir}/sysconfig
+install -p -m 644 %{SOURCE10} %{buildroot}%{_sysconfdir}/sysconfig
+install -p -m 644 %{SOURCE7} %{buildroot}%{_sysconfdir}/sysconfig
 
 %if 0%{?with_unit_test}
 install -d -m 0755 %{buildroot}%{_sharedstatedir}/%{name}-unit-test/
@@ -328,25 +326,19 @@ popd
 %{!?_licensedir:%global license %doc}
 
 %files
-%license LICENSE LICENSE-vim-syntax
-%doc AUTHORS CHANGELOG.md CONTRIBUTING.md MAINTAINERS NOTICE README.md 
-%config(noreplace) %{_sysconfdir}/sysconfig/%{name}
-%config(noreplace) %{_sysconfdir}/sysconfig/%{name}-network
-%config(noreplace) %{_sysconfdir}/sysconfig/%{name}-storage
+%license LICENSE*
+%doc AUTHORS CHANGELOG.md CONTRIBUTING.md MAINTAINERS NOTICE README*
+%config(noreplace) %{_sysconfdir}/sysconfig/%{name}*
 %{_mandir}/man1/%{name}*.1.gz
 %{_mandir}/man5/Dockerfile-latest.5.gz
 %{_mandir}/man8/%{name}*.8.gz
-%{_bindir}/%{name}
-%{_unitdir}/%{name}.service
+%{_bindir}/%{name}*
+%{_unitdir}/%{name}*
 %{_datadir}/bash-completion/completions/%{name}
 %dir %{_datadir}/rhel/secrets
 %dir %{_sharedstatedir}/%{name}
 %{_udevrulesdir}/80-%{name}.rules
 %{_sysconfdir}/%{name}
-# d-s-s specific
-%config(noreplace) %{_sysconfdir}/sysconfig/%{name}-storage-setup
-%{_unitdir}/%{name}-storage-setup.service
-%{_bindir}/%{name}-storage-setup
 %dir %{dss_libdir}
 %{dss_libdir}/*
 %{_datadir}/vim/vimfiles/doc/%{repo}file-latest.txt
@@ -377,8 +369,7 @@ popd
 %license %{repo}-novolume-plugin-%{commit4}/LICENSE
 %doc %{repo}-novolume-plugin-%{commit4}/README.md
 %{_prefix}/lib/%{name}/%{name}-novolume-plugin
-%{_unitdir}/%{name}-novolume-plugin.service
-%{_unitdir}/%{name}-novolume-plugin.socket
+%{_unitdir}/%{name}-novolume-plugin.*
 
 %changelog
 * Fri Apr 08 2016 Lokesh Mandvekar <lsm5@fedoraproject.org> - 1.10.3-6.gitf8a9a2a

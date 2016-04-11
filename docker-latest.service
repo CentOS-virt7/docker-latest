@@ -17,7 +17,7 @@ ExecStart=/bin/sh -c '/usr/bin/docker-latest daemon \
           $DOCKER_STORAGE_OPTIONS \
           $DOCKER_NETWORK_OPTIONS \
           $INSECURE_REGISTRY \
-          2>&1 | /usr/bin/forward-journald -tag docker'
+          2>&1 | /usr/bin/forward-journald -tag docker-latest'
 LimitNOFILE=1048576
 LimitNPROC=1048576
 LimitCORE=infinity
