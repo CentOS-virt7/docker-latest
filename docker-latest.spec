@@ -42,7 +42,7 @@
 
 Name: %{repo}-latest
 Version: 1.10.3
-Release: 8%{?dist}
+Release: 9%{?dist}
 Summary: Automates deployment of containerized applications
 License: ASL 2.0
 URL: https://%{provider}.%{provider_tld}/projectatomic/%{repo}
@@ -381,6 +381,11 @@ popd
 %{_unitdir}/%{name}-novolume-plugin.*
 
 %changelog
+* Mon Apr 11 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-9
+- built docker-latest @projectatomic/rhel7-1.10.3 commit#36da459
+- built d-s-s commit#ac50cee
+- built novolume-plugin commit#7715854
+
 * Mon Apr 11 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-8
 - logrotate and novolume-plugin should require docker-latest and not docker
 
