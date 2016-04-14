@@ -26,12 +26,12 @@
 
 # docker
 %global git0 https://github.com/projectatomic/%{repo}
-%global commit0 36da459cb374202b9b149723721b090b61e86294
+%global commit0 5738d87daed8bdc5844c123039bfa80bf788a445
 %global shortcommit0 %(c=%{commit0}; echo ${c:0:7})
 
 # d-s-s
 %global git1 https://github.com/projectatomic/%{repo}-storage-setup/
-%global commit1 ac50cee05cec521a0b23ebe16d0f5376e4b6a8cc
+%global commit1 04a3847d214a906c97b0f172f14cf6824f1d40b4
 %global shortcommit1 %(c=%{commit1}; echo ${c:0:7})
 %global dss_libdir %{_exec_prefix}/lib/%{name}-storage-setup
 
@@ -40,9 +40,24 @@
 %global commit4 7715854b5f3ccfdbf005c9e95d6e9afcaae9376a
 %global shortcommit4 %(c=%{commit4}; echo ${c:0:7})
 
+# rhel-push-plugin
+%global git5 https://github.com/projectatomic/rhel-push-plugin
+%global commit5 2e19b59cd1ebd89bde5d75be6a849cac8c545c9e
+%global shortcommit5 %(c=%{commit5}; echo ${c:0:7})
+
+# docker-lvm-plugin
+%global git6 https://github.com/projectatomic/%{repo}-lvm-plugin
+%global commit6 7eb53d570dbdeefd5217e9cf084e35d6dbc2cda1
+%global shortcommit6 %(c=%{commit6}; echo ${c:0:7})
+
+# v1.10-migrator
+%global git7 https://github.com/%{repo}/v1.10-migrator
+%global commit7 c417a6a022c5023c111662e8280f885f6ac259be
+%global shortcommit7 %(c=%{commit7}; echo ${c:0:7})
+
 Name: %{repo}-latest
 Version: 1.10.3
-Release: 9%{?dist}
+Release: 10%{?dist}
 Summary: Automates deployment of containerized applications
 License: ASL 2.0
 URL: https://%{provider}.%{provider_tld}/projectatomic/%{repo}
@@ -56,6 +71,9 @@ Source7: %{name}-storage.sysconfig
 Source8: %{name}-logrotate.sh
 Source9: README.%{name}-logrotate
 Source10: %{name}-network.sysconfig
+Source11: %{git5}/archive/%{commit5}/rhel-push-plugin-%{shortcommit5}.tar.gz
+Source12: %{git6}/archive/%{commit6}/%{repo}-lvm-plugin-%{shortcommit6}.tar.gz
+Source13: %{git7}/archive/%{commit7}/v1.10-migrator-%{shortcommit7}.tar.gz
 
 BuildRequires: git
 BuildRequires: glibc-static
@@ -73,7 +91,6 @@ Requires: device-mapper-libs >= 7:1.02.97
 Requires: selinux-policy >= %{selinux_policyver}
 Requires: %{repo}-selinux >= 1.9.1-28
 Requires: %{repo}-forward-journald >= 1.9.1-28
-Requires: %{repo}-utils >= 1.9.1-28
 
 # Resolves: rhbz#1045220
 Requires: xz
@@ -142,6 +159,44 @@ local volumes defined. In particular, the plugin will block `docker run` with:
 
 The only thing allowed will be just bind mounts.
 
+%package rhel-push-plugin
+License: GPLv2
+Summary: Avoids pushing a RHEL-based image to docker.io registry
+
+%description rhel-push-plugin
+In order to use this plugin you must be running at least Docker 1.10 which
+has support for authorization plugins.
+
+This plugin avoids any RHEL based image to be pushed to the default docker.io
+registry preventing users to violate the RH subscription agreement.
+
+%package lvm-plugin
+License: LGPLv3
+Summary: Docker volume driver for lvm volumes
+Requires: %{name} = %{version}-%{release}
+
+%description lvm-plugin
+Docker Volume Driver for lvm volumes.
+
+This plugin can be used to create lvm volumes of specified size, which can 
+then be bind mounted into the container using `docker run` command.
+
+%package v1.10-migrator
+License: ASL 2.0 and CC-BY-SA
+Summary: Calculates SHA256 checksums for docker layer content
+Requires: %{name} = %{version}-%{release}
+
+%description v1.10-migrator
+Starting from v1.10 docker uses content addressable IDs for the images and
+layers instead of using generated ones. This tool calculates SHA256 checksums
+for docker layer content, so that they don't need to be recalculated when the
+daemon starts for the first time.
+
+The migration usually runs on daemon startup but it can be quite slow(usually
+100-200MB/s) and daemon will not be able to accept requests during
+that time. You can run this tool instead while the old daemon is still
+running and skip checksum calculation on startup.
+
 %prep
 %setup -q -n %{repo}-%{commit0}
 
@@ -150,24 +205,55 @@ cp %{SOURCE9} .
 
 # untar d-s-s
 tar zxf %{SOURCE1}
+pushd %{repo}-storage-setup-%{commit1}
+sed -i 's/%{repo}/%{name}/g' %{repo}-storage-setup*
+popd
 
-# untar docker-novolume-plugin
+# untar novolume-plugin
 tar zxf %{SOURCE4}
+pushd %{repo}-novolume-plugin-%{commit4}/systemd
+sed -i 's/%{repo}/%{name}/g' %{repo}*
+popd
+
+# untar rhel-push-plugin
+tar zxf %{SOURCE11}
+pushd rhel-push-plugin-%{commit5}/systemd
+sed -i 's/%{repo}/%{name}/g' *
+popd
+
+# untar lvm-plugin
+tar zxf %{SOURCE12}
+pushd %{repo}-lvm-plugin-%{commit6}/vendor
+mkdir src
+mv g* src/
+popd
+pushd %{repo}-lvm-plugin-%{commit6}/systemd
+sed -i 's/%{repo}/%{name}/g' *
+popd
+
+# untar v1.10-migrator
+tar zxf %{SOURCE13}
 
 %build
 # set up temporary build gopath, and put our directory there
 mkdir _build
 pushd _build
-mkdir -p src/%{provider}.%{provider_tld}/{%{repo},projectatomic,vbatts}
+mkdir -p src/%{provider}.%{provider_tld}/{%{repo},projectatomic}
 ln -s $(dirs +1 -l) src/%{import_path}
 ln -s $(dirs +1 -l)/%{repo}-novolume-plugin-%{commit4} src/%{provider}.%{provider_tld}/projectatomic/%{repo}-novolume-plugin
+ln -s $(dirs +1 -l)/rhel-push-plugin-%{commit5} src/%{provider}.%{provider_tld}/projectatomic/rhel-push-plugin
+ln -s $(dirs +1 -l)/%{repo}-lvm-plugin-%{commit6} src/%{provider}.%{provider_tld}/projectatomic/%{repo}-lvm-plugin
 popd
 
 export DOCKER_GITCOMMIT="%{shortcommit0}/%{version}"
-export DOCKER_BUILDTAGS="selinux"
-export GOPATH=$(pwd)/_build:$(pwd)/vendor:%{gopath}:$(pwd)/%{repo}-novolume-plugin-%{commit4}/Godeps/_workspace
+export DOCKER_BUILDTAGS="selinux seccomp"
+export GOPATH=$(pwd)/_build:$(pwd)/vendor:%{gopath}
+export GOPATH=$GOPATH:$(pwd)/%{repo}-novolume-plugin-%{commit4}/Godeps/_workspace
+export GOPATH=$GOPATH:$(pwd)/rhel-push-plugin-%{commit5}/Godeps/_workspace
+export GOPATH=$GOPATH:$(pwd)/%{repo}-lvm-plugin-%{commit6}/vendor
 
-DOCKER_DEBUG=1 bash -x hack/make.sh dynbinary
+sed -i '/LDFLAGS_STATIC/d' hack/make/.dockerinit
+IAMSTATIC=false DOCKER_DEBUG=1 bash -x hack/make.sh dynbinary
 man/md2man-all.sh
 pushd man/man1
 rename %{repo} %{name} *
@@ -181,9 +267,20 @@ popd
 cp contrib/syntax/vim/LICENSE LICENSE-vim-syntax
 cp contrib/syntax/vim/README.md README-vim-syntax.md
 go-md2man -in %{repo}-novolume-plugin-%{commit4}/man/%{repo}-novolume-plugin.8.md -out %{name}-novolume-plugin.8
+go-md2man -in rhel-push-plugin-%{commit5}/man/rhel-push-plugin.8.md -out rhel-push-plugin.8
+go-md2man -in %{repo}-lvm-plugin-%{commit6}/man/%{repo}-lvm-plugin.8.md -out %{name}-lvm-plugin.8
 
 pushd $(pwd)/_build/src
 go build -ldflags "-B 0x$(head -c20 /dev/urandom|od -An -tx1|tr -d ' \n')" github.com/projectatomic/%{repo}-novolume-plugin
+go build -ldflags "-B 0x$(head -c20 /dev/urandom|od -An -tx1|tr -d ' \n')" github.com/projectatomic/rhel-push-plugin
+go build -ldflags "-B 0x$(head -c20 /dev/urandom|od -An -tx1|tr -d ' \n')" github.com/projectatomic/%{repo}-lvm-plugin
+popd
+
+# build v1.10-migrator
+pushd v1.10-migrator-%{commit7}
+export GOPATH=$GOPATH:$(pwd)/Godeps/_workspace
+sed -i 's/godep //g' Makefile
+make v1.10-migrator-local
 popd
 
 %install
@@ -254,18 +351,34 @@ install -d %{buildroot}%{_unitdir}
 install -p -m 644 %{SOURCE5} %{buildroot}%{_unitdir}
 
 # install novolume-plugin executable, unitfile, socket and man
-install -d %{buildroot}/usr/lib/%{name}
-install -p -m 755 _build/src/%{repo}-novolume-plugin %{buildroot}/usr/lib/%{name}/%{name}-novolume-plugin
+install -d %{buildroot}/%{_prefix}/lib/%{name}
+install -p -m 755 _build/src/%{repo}-novolume-plugin %{buildroot}/%{_prefix}/lib/%{name}/%{name}-novolume-plugin
 install -p -m 644 %{repo}-novolume-plugin-%{commit4}/systemd/%{repo}-novolume-plugin.service %{buildroot}%{_unitdir}/%{name}-novolume-plugin.service
 install -p -m 644 %{repo}-novolume-plugin-%{commit4}/systemd/%{repo}-novolume-plugin.socket %{buildroot}%{_unitdir}/%{name}-novolume-plugin.socket
 install -d %{buildroot}%{_mandir}/man8
 install -p -m 644 %{name}-novolume-plugin.8 %{buildroot}%{_mandir}/man8
 
+# install rhel-push-plugin executable, unitfile, socket and man
+install -d %{buildroot}/%{_prefix}/lib/%{name}
+install -p -m 755 _build/src/rhel-push-plugin %{buildroot}/%{_prefix}/lib/%{name}/rhel-push-plugin
+install -p -m 644 rhel-push-plugin-%{commit5}/systemd/rhel-push-plugin.service %{buildroot}%{_unitdir}/rhel-push-plugin.service
+install -p -m 644 rhel-push-plugin-%{commit5}/systemd/rhel-push-plugin.socket %{buildroot}%{_unitdir}/rhel-push-plugin.socket
+install -d %{buildroot}%{_mandir}/man8
+install -p -m 644 rhel-push-plugin.8 %{buildroot}%{_mandir}/man8
+
+# install %%{repo}-lvm-plugin executable, unitfile, socket and man
+install -d %{buildroot}/%{_prefix}/lib/%{name}
+install -p -m 755 _build/src/%{repo}-lvm-plugin %{buildroot}/%{_prefix}/lib/%{name}/%{name}-lvm-plugin
+install -p -m 644 %{repo}-lvm-plugin-%{commit6}/systemd/%{repo}-lvm-plugin.service %{buildroot}%{_unitdir}/%{name}-lvm-plugin.service
+install -p -m 644 %{repo}-lvm-plugin-%{commit6}/systemd/%{repo}-lvm-plugin.socket %{buildroot}%{_unitdir}/%{name}-lvm-plugin.socket
+install -d %{buildroot}%{_mandir}/man8
+install -p -m 644 %{name}-lvm-plugin.8 %{buildroot}%{_mandir}/man8
+
 # for additional args
 install -d %{buildroot}%{_sysconfdir}/sysconfig/
-install -p -m 644 %{SOURCE6} %{buildroot}%{_sysconfdir}/sysconfig
-install -p -m 644 %{SOURCE10} %{buildroot}%{_sysconfdir}/sysconfig
-install -p -m 644 %{SOURCE7} %{buildroot}%{_sysconfdir}/sysconfig
+install -p -m 644 %{SOURCE6} %{buildroot}%{_sysconfdir}/sysconfig/%{name}
+install -p -m 644 %{SOURCE10} %{buildroot}%{_sysconfdir}/sysconfig/%{name}-network
+install -p -m 644 %{SOURCE7} %{buildroot}%{_sysconfdir}/sysconfig/%{name}-storage
 
 %if 0%{?with_unit_test}
 install -d -m 0755 %{buildroot}%{_sharedstatedir}/%{name}-unit-test/
@@ -296,7 +409,6 @@ install -dp %{buildroot}%{_sysconfdir}/%{name}
 
 # install d-s-s
 pushd %{repo}-storage-setup-%{commit1}
-sed -i 's/%{repo}/%{name}/g' %{repo}-storage-setup*
 install -d %{buildroot}%{_bindir}
 install -p -m 755 %{repo}-storage-setup.sh %{buildroot}%{_bindir}/%{name}-storage-setup
 install -d %{buildroot}%{_unitdir}
@@ -309,6 +421,10 @@ install -p -m 644 %{repo}-storage-setup.1 %{buildroot}%{_mandir}/man1/%{name}-st
 install -d %{buildroot}%{_sysconfdir}/sysconfig
 install -p -m 644 %{repo}-storage-setup-override.conf %{buildroot}%{_sysconfdir}/sysconfig/%{name}-storage-setup
 popd
+
+# install v1.10-migrator
+install -d %{buildroot}%{_bindir}
+install -p -m 700 v1.10-migrator-%{commit7}/v1.10-migrator-local %{buildroot}%{_bindir}
 
 %check
 [ ! -w /run/%{name}.sock ] || {
@@ -330,6 +446,10 @@ popd
 %postun
 %systemd_postun_with_restart %{name}
 
+%triggerin -n %{name}-v1.10-migrator -- %{repo} < %{version}
+%{_bindir}/v1.10-migrator-local 2>/dev/null
+exit 0
+
 #define license tag if not already defined
 %{!?_licensedir:%global license %doc}
 
@@ -339,9 +459,10 @@ popd
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}*
 %{_mandir}/man1/%{name}*.1.gz
 %{_mandir}/man5/Dockerfile-latest.5.gz
-%{_mandir}/man8/%{name}*.8.gz
+%{_mandir}/man8/%{name}-daemon.8.gz
 %{_bindir}/%{name}*
-%{_unitdir}/%{name}*
+%{_unitdir}/%{name}.service
+%{_unitdir}/%{name}-storage-setup.service
 %{_datadir}/bash-completion/completions/%{name}
 %dir %{_datadir}/rhel
 %{_datadir}/rhel/*
@@ -377,10 +498,41 @@ popd
 %files novolume-plugin
 %license %{repo}-novolume-plugin-%{commit4}/LICENSE
 %doc %{repo}-novolume-plugin-%{commit4}/README.md
+%{_mandir}/man8/%{name}-novolume-plugin.8.gz
 %{_prefix}/lib/%{name}/%{name}-novolume-plugin
 %{_unitdir}/%{name}-novolume-plugin.*
 
+%files rhel-push-plugin
+%license rhel-push-plugin-%{commit5}/LICENSE
+%doc rhel-push-plugin-%{commit5}/README.md
+%{_mandir}/man8/rhel-push-plugin.8.gz
+%{_prefix}/lib/%{name}/rhel-push-plugin
+%{_unitdir}/rhel-push-plugin.*
+
+%files lvm-plugin
+%license %{repo}-lvm-plugin-%{commit6}/LICENSE
+%doc %{repo}-lvm-plugin-%{commit6}/README.md
+%{_mandir}/man8/%{name}-lvm-plugin.8.gz
+%{_prefix}/lib/%{name}/%{name}-lvm-plugin
+%{_unitdir}/%{name}-lvm-plugin.*
+
+%files v1.10-migrator
+%license v1.10-migrator-%{commit7}/LICENSE.{code,docs}
+%doc v1.10-migrator-%{commit7}/{CONTRIBUTING,README}.md
+%{_bindir}/v1.10-migrator-local
+
 %changelog
+* Thu Apr 14 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-10
+- Resolves: rhbz#1326374 - s/docker/docker-latest where relevant
+- Resolves: rhbz#1327314 - include rhel-push-plugin subpackage
+- Resolves: rhbz#1327405 - include docker-lvm-plugin subpackage
+- built docker-latest @projectatomic/rhel7-1.10.3 commit#5738d87
+- built d-s-s commit#04a3847
+- built novolume-plugin commit#7715854
+- built rhel-push-plugin commit#2e19b59
+- built docker-lvm-plugin commit#7eb53d5
+- built v1.10-migrator commit#c417a6a
+
 * Mon Apr 11 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-9
 - built docker-latest @projectatomic/rhel7-1.10.3 commit#36da459
 - built d-s-s commit#ac50cee
