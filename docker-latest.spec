@@ -55,9 +55,16 @@
 %global commit7 c417a6a022c5023c111662e8280f885f6ac259be
 %global shortcommit7 %(c=%{commit7}; echo ${c:0:7})
 
+# Version of SELinux
+%if 0%{?fedora} >= 22
+%global selinux_policyver 3.13.1-119
+%else
+%global selinux_policyver 3.13.1-23
+%endif
+
 Name: %{repo}-latest
 Version: 1.10.3
-Release: 10%{?dist}
+Release: 11%{?dist}
 Summary: Automates deployment of containerized applications
 License: ASL 2.0
 URL: https://%{provider}.%{provider_tld}/projectatomic/%{repo}
@@ -522,6 +529,9 @@ exit 0
 %{_bindir}/v1.10-migrator-local
 
 %changelog
+* Wed Apr 20 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-11
+- define selinux_policyver, seemed to have skipped out earlier
+
 * Thu Apr 14 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-10
 - Resolves: rhbz#1326374 - s/docker/docker-latest where relevant
 - Resolves: rhbz#1327314 - include rhel-push-plugin subpackage
