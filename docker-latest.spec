@@ -26,7 +26,7 @@
 
 # docker
 %global git0 https://github.com/projectatomic/%{repo}
-%global commit0 5738d87daed8bdc5844c123039bfa80bf788a445
+%global commit0 7fd4fb01be119f611719c6d3e41d1ac57cc731cd
 %global shortcommit0 %(c=%{commit0}; echo ${c:0:7})
 
 # d-s-s
@@ -64,7 +64,7 @@
 
 Name: %{repo}-latest
 Version: 1.10.3
-Release: 11%{?dist}
+Release: 12%{?dist}
 Summary: Automates deployment of containerized applications
 License: ASL 2.0
 URL: https://%{provider}.%{provider_tld}/projectatomic/%{repo}
@@ -529,6 +529,15 @@ exit 0
 %{_bindir}/v1.10-migrator-local
 
 %changelog
+* Fri Apr 22 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-12
+- Resolves: #1329728 - CVE-2016-3697
+- built docker @projectatomic/docker commit#7fd4fb0
+- built d-s-s commit#04a3847
+- built novolume-plugin commit#7715854
+- built rhel-push-plugin commit#2e19b59
+- built docker-lvm-plugin commit#7eb53d5
+- built v1.10-migrator commit#c417a6a
+
 * Wed Apr 20 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-11
 - define selinux_policyver, seemed to have skipped out earlier
 
