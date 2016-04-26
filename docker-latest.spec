@@ -64,7 +64,7 @@
 
 Name: %{repo}-latest
 Version: 1.10.3
-Release: 13%{?dist}
+Release: 14%{?dist}
 Summary: Automates deployment of containerized applications
 License: ASL 2.0
 URL: https://%{provider}.%{provider_tld}/projectatomic/%{repo}
