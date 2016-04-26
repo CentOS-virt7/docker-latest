@@ -64,7 +64,7 @@
 
 Name: %{repo}-latest
 Version: 1.10.3
-Release: 15%{?dist}
+Release: 16%{?dist}
 Summary: Automates deployment of containerized applications
 License: ASL 2.0
 URL: https://%{provider}.%{provider_tld}/projectatomic/%{repo}
@@ -216,7 +216,8 @@ cp %{SOURCE9} .
 # untar d-s-s
 tar zxf %{SOURCE1}
 pushd %{repo}-storage-setup-%{commit1}
-sed -i 's/%{repo}/%{repo}_latest/g' %{repo}-storage-setup*
+sed -i 's/%{repo}/%{name}/g' %{repo}-storage-setup*
+sed -i 's/%{name}_devmapper_data_dir/%{repo}_devmapper_data_dir/g' %{repo}-storage-setup*
 popd
 
 # untar novolume-plugin
@@ -533,6 +534,10 @@ exit 0
 %{_bindir}/v1.10-migrator-local
 
 %changelog
+* Tue Apr 26 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-16
+- Resolves: #1330714 d-s-s: continue replacing docker with
+docker-latest, but retain docker_devmapper_data_dir
+
 * Tue Apr 26 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-15
 - Resolves: #1330714 d-s-s: replace docker with docker_latest, not docker-latest
 
