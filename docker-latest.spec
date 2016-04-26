@@ -31,7 +31,7 @@
 
 # d-s-s
 %global git1 https://github.com/projectatomic/%{repo}-storage-setup/
-%global commit1 04a3847d214a906c97b0f172f14cf6824f1d40b4
+%global commit1 df2af9439577cedc2c502512d887c8df10a33cbf
 %global shortcommit1 %(c=%{commit1}; echo ${c:0:7})
 %global dss_libdir %{_exec_prefix}/lib/%{name}-storage-setup
 
@@ -93,7 +93,8 @@ BuildRequires: sqlite-devel
 BuildRequires: pkgconfig(systemd)
 BuildRequires: golang >= 1.4.2
 Requires: device-mapper-libs >= 7:1.02.97
-Requires: %{repo}-common >= 1.9.1-33
+Requires: %{repo}-common >= 1.9.1-36
+Requires: %{repo}-rhel-push-plugin
 
 # RE: rhbz#1195804 - ensure min NVR for selinux-policy
 Requires: selinux-policy >= %{selinux_policyver}
@@ -116,7 +117,6 @@ Requires: lvm2 >= 7:1.02.97
 Requires: xfsprogs
 Obsoletes: %{repo}-storage-setup <= 0.5-3
 
-Requires: rhel-push-plugin
 
 %description
 Docker is an open-source engine that automates the deployment of any
@@ -144,13 +144,13 @@ Requires: %{name} = %{version}-%{release}
 This package installs %{summary}. logrotate is assumed to be installed on
 containers for this to work, failures are silently ignored.
 
-%package novolume-plugin
+%package -n %{repo}-novolume-plugin
 URL: %{git4}
 License: MIT
 Summary: Block container starts with local volumes defined
 Requires: %{name} = %{version}-%{release}
 
-%description novolume-plugin
+%description -n %{repo}-novolume-plugin
 When a volume in provisioned via the `VOLUME` instruction in a Dockerfile or
 via `docker run -v volumename`, host's storage space is used. This could lead to
 an unexpected out of space issue which could bring down everything.
@@ -169,23 +169,23 @@ local volumes defined. In particular, the plugin will block `docker run` with:
 
 The only thing allowed will be just bind mounts.
 
-%package -n rhel-push-plugin
+%package -n %{repo}-rhel-push-plugin
 License: GPLv2
 Summary: Avoids pushing a RHEL-based image to docker.io registry
 
-%description -n rhel-push-plugin
+%description -n %{repo}-rhel-push-plugin
 In order to use this plugin you must be running at least Docker 1.10 which
 has support for authorization plugins.
 
 This plugin avoids any RHEL based image to be pushed to the default docker.io
 registry preventing users to violate the RH subscription agreement.
 
-%package lvm-plugin
+%package -n %{repo}-lvm-plugin
 License: LGPLv3
 Summary: Docker volume driver for lvm volumes
 Requires: %{name} = %{version}-%{release}
 
-%description lvm-plugin
+%description -n %{repo}-lvm-plugin
 Docker Volume Driver for lvm volumes.
 
 This plugin can be used to create lvm volumes of specified size, which can 
@@ -362,8 +362,8 @@ install -d %{buildroot}%{_unitdir}
 install -p -m 644 %{SOURCE5} %{buildroot}%{_unitdir}
 
 # install novolume-plugin executable, unitfile, socket and man
-install -d %{buildroot}/%{_prefix}/lib/%{name}
-install -p -m 755 _build/src/%{repo}-novolume-plugin %{buildroot}/%{_prefix}/lib/%{name}/%{name}-novolume-plugin
+install -d %{buildroot}/%{_libexecdir}/%{repo}
+install -p -m 755 _build/src/%{repo}-novolume-plugin %{buildroot}/%{_libexecdir}/%{repo}/%{name}-novolume-plugin
 install -p -m 644 %{repo}-novolume-plugin-%{commit4}/systemd/%{repo}-novolume-plugin.service %{buildroot}%{_unitdir}/%{name}-novolume-plugin.service
 install -p -m 644 %{repo}-novolume-plugin-%{commit4}/systemd/%{repo}-novolume-plugin.socket %{buildroot}%{_unitdir}/%{name}-novolume-plugin.socket
 install -d %{buildroot}%{_mandir}/man8
@@ -378,8 +378,8 @@ install -d %{buildroot}%{_mandir}/man8
 install -p -m 644 rhel-push-plugin.8 %{buildroot}%{_mandir}/man8
 
 # install %%{repo}-lvm-plugin executable, unitfile, socket and man
-install -d %{buildroot}/%{_prefix}/lib/%{name}
-install -p -m 755 _build/src/%{repo}-lvm-plugin %{buildroot}/%{_prefix}/lib/%{name}/%{name}-lvm-plugin
+install -d %{buildroot}/%{_libexecdir}/%{repo}
+install -p -m 755 _build/src/%{repo}-lvm-plugin %{buildroot}/%{_libexecdir}/%{repo}/%{name}-lvm-plugin
 install -p -m 644 %{repo}-lvm-plugin-%{commit6}/systemd/%{repo}-lvm-plugin.service %{buildroot}%{_unitdir}/%{name}-lvm-plugin.service
 install -p -m 644 %{repo}-lvm-plugin-%{commit6}/systemd/%{repo}-lvm-plugin.socket %{buildroot}%{_unitdir}/%{name}-lvm-plugin.socket
 install -d %{buildroot}%{_mandir}/man8
@@ -506,25 +506,25 @@ exit 0
 %doc README.%{name}-logrotate
 %{_sysconfdir}/cron.daily/%{name}-logrotate
 
-%files novolume-plugin
+%files -n %{repo}-novolume-plugin
 %license %{repo}-novolume-plugin-%{commit4}/LICENSE
 %doc %{repo}-novolume-plugin-%{commit4}/README.md
 %{_mandir}/man8/%{name}-novolume-plugin.8.gz
-%{_prefix}/lib/%{name}/%{name}-novolume-plugin
+%{_libexecdir}/%{repo}/%{name}-novolume-plugin
 %{_unitdir}/%{name}-novolume-plugin.*
 
-%files -n rhel-push-plugin
+%files -n %{repo}-rhel-push-plugin
 %license rhel-push-plugin-%{commit5}/LICENSE
 %doc rhel-push-plugin-%{commit5}/README.md
 %{_mandir}/man8/rhel-push-plugin.8.gz
 %{_libexecdir}/%{repo}/rhel-push-plugin
 %{_unitdir}/rhel-push-plugin.*
 
-%files lvm-plugin
+%files -n %{repo}-lvm-plugin
 %license %{repo}-lvm-plugin-%{commit6}/LICENSE
 %doc %{repo}-lvm-plugin-%{commit6}/README.md
 %{_mandir}/man8/%{name}-lvm-plugin.8.gz
-%{_prefix}/lib/%{name}/%{name}-lvm-plugin
+%{_libexecdir}/%{repo}/%{name}-lvm-plugin
 %{_unitdir}/%{name}-lvm-plugin.*
 
 %files v1.10-migrator
@@ -534,8 +534,13 @@ exit 0
 
 %changelog
 * Tue Apr 26 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-14
-- rename docker-latest-rhel-push-plugin to rhel-push-plugin
 - docker unitfile requires rhel-push-plugin.socket
+- requires docker-common >= 1.9.1-36
+- append docker instead of docker-latest to plugin subpackages
+- Resolves: #1326374 - plugin executables installed in /usr/libexecdir/docker
+- Resolves: #1330714 - d-s-s: do not pass devices which have 'creation of
+device node' in progress.
+- built d-s-s commit#df2af94
 
 * Mon Apr 25 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-13
 - Resolves: #1330366 - require docker-common
