@@ -42,7 +42,7 @@
 
 # rhel-push-plugin
 %global git5 https://github.com/projectatomic/rhel-push-plugin
-%global commit5 2e19b59cd1ebd89bde5d75be6a849cac8c545c9e
+%global commit5 904c0ca2a285e5e7c514c2eb90f5919bc59b6f86
 %global shortcommit5 %(c=%{commit5}; echo ${c:0:7})
 
 # docker-lvm-plugin
@@ -64,7 +64,7 @@
 
 Name: %{repo}-latest
 Version: 1.10.3
-Release: 12%{?dist}
+Release: 13%{?dist}
 Summary: Automates deployment of containerized applications
 License: ASL 2.0
 URL: https://%{provider}.%{provider_tld}/projectatomic/%{repo}
@@ -93,6 +93,7 @@ BuildRequires: sqlite-devel
 BuildRequires: pkgconfig(systemd)
 BuildRequires: golang >= 1.4.2
 Requires: device-mapper-libs >= 7:1.02.97
+Requires: %{repo}-common >= 1.9.1-33
 
 # RE: rhbz#1195804 - ensure min NVR for selinux-policy
 Requires: selinux-policy >= %{selinux_policyver}
@@ -225,7 +226,8 @@ popd
 # untar rhel-push-plugin
 tar zxf %{SOURCE11}
 pushd rhel-push-plugin-%{commit5}/systemd
-sed -i 's/%{repo}/%{name}/g' *
+sed -i 's/Before=%{repo}.service/Before=%{name}.service/g' rhel-push-plugin.service
+sed -i 's/Requires=rhel-push-plugin.socket %{repo}.service/Requires=rhel-push-plugin.socket %{name}.service/g' rhel-push-plugin.service
 popd
 
 # untar lvm-plugin
@@ -366,8 +368,8 @@ install -d %{buildroot}%{_mandir}/man8
 install -p -m 644 %{name}-novolume-plugin.8 %{buildroot}%{_mandir}/man8
 
 # install rhel-push-plugin executable, unitfile, socket and man
-install -d %{buildroot}/%{_prefix}/lib/%{name}
-install -p -m 755 _build/src/rhel-push-plugin %{buildroot}/%{_prefix}/lib/%{name}/rhel-push-plugin
+install -d %{buildroot}%{_libexecdir}/%{repo}
+install -p -m 755 _build/src/rhel-push-plugin %{buildroot}%{_libexecdir}/%{repo}/rhel-push-plugin
 install -p -m 644 rhel-push-plugin-%{commit5}/systemd/rhel-push-plugin.service %{buildroot}%{_unitdir}/rhel-push-plugin.service
 install -p -m 644 rhel-push-plugin-%{commit5}/systemd/rhel-push-plugin.socket %{buildroot}%{_unitdir}/rhel-push-plugin.socket
 install -d %{buildroot}%{_mandir}/man8
@@ -513,7 +515,7 @@ exit 0
 %license rhel-push-plugin-%{commit5}/LICENSE
 %doc rhel-push-plugin-%{commit5}/README.md
 %{_mandir}/man8/rhel-push-plugin.8.gz
-%{_prefix}/lib/%{name}/rhel-push-plugin
+%{_libexecdir}/%{repo}/rhel-push-plugin
 %{_unitdir}/rhel-push-plugin.*
 
 %files lvm-plugin
@@ -529,6 +531,16 @@ exit 0
 %{_bindir}/v1.10-migrator-local
 
 %changelog
+* Mon Apr 25 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-13
+- Resolves: #1330366 - require docker-common
+- rhel-push-plugin fixes From: Antonio Murdaca <runcom@redhat.com>
+- built docker @projectatomic/docker commit#7fd4fb0
+- built d-s-s commit#04a3847
+- built novolume-plugin commit#7715854
+- built rhel-push-plugin commit#904c0ca
+- built docker-lvm-plugin commit#7eb53d5
+- built v1.10-migrator commit#c417a6a
+
 * Fri Apr 22 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-12
 - Resolves: #1329728 - CVE-2016-3697
 - built docker @projectatomic/docker commit#7fd4fb0

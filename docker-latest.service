@@ -13,6 +13,7 @@ EnvironmentFile=-/etc/sysconfig/docker-latest-storage
 EnvironmentFile=-/etc/sysconfig/docker-latest-network
 Environment=GOTRACEBACK=crash
 ExecStart=/bin/sh -c '/usr/bin/docker-latest daemon \
+          --authorization-plugin=rhel-push-plugin \
           --exec-opt native.cgroupdriver=systemd \
           -g /var/lib/docker-latest \
           $OPTIONS \
