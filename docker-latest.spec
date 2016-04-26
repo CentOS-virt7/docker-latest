@@ -116,6 +116,8 @@ Requires: lvm2 >= 7:1.02.97
 Requires: xfsprogs
 Obsoletes: %{repo}-storage-setup <= 0.5-3
 
+Requires: rhel-push-plugin
+
 %description
 Docker is an open-source engine that automates the deployment of any
 application as a lightweight, portable, self-sufficient container that will
@@ -167,11 +169,11 @@ local volumes defined. In particular, the plugin will block `docker run` with:
 
 The only thing allowed will be just bind mounts.
 
-%package rhel-push-plugin
+%package -n rhel-push-plugin
 License: GPLv2
 Summary: Avoids pushing a RHEL-based image to docker.io registry
 
-%description rhel-push-plugin
+%description -n rhel-push-plugin
 In order to use this plugin you must be running at least Docker 1.10 which
 has support for authorization plugins.
 
@@ -511,7 +513,7 @@ exit 0
 %{_prefix}/lib/%{name}/%{name}-novolume-plugin
 %{_unitdir}/%{name}-novolume-plugin.*
 
-%files rhel-push-plugin
+%files -n rhel-push-plugin
 %license rhel-push-plugin-%{commit5}/LICENSE
 %doc rhel-push-plugin-%{commit5}/README.md
 %{_mandir}/man8/rhel-push-plugin.8.gz
@@ -531,6 +533,10 @@ exit 0
 %{_bindir}/v1.10-migrator-local
 
 %changelog
+* Tue Apr 26 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-14
+- rename docker-latest-rhel-push-plugin to rhel-push-plugin
+- docker unitfile requires rhel-push-plugin.socket
+
 * Mon Apr 25 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-13
 - Resolves: #1330366 - require docker-common
 - rhel-push-plugin fixes From: Antonio Murdaca <runcom@redhat.com>
