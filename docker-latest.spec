@@ -9,6 +9,10 @@
 # modifying the dockerinit binary breaks the SHA1 sum check by docker
 %global __os_install_post %{_rpmconfigdir}/brp-compress
 
+# macros for 'docker' package VR
+%global docker_ver 1.9.1
+%global docker_rel 37
+
 # docker builds in a checksum of dockerinit into docker,
 # so stripping the binaries breaks docker
 %if 0%{?with_debug}
@@ -93,13 +97,14 @@ BuildRequires: sqlite-devel
 BuildRequires: pkgconfig(systemd)
 BuildRequires: golang >= 1.4.2
 Requires: device-mapper-libs >= 7:1.02.97
-Requires: %{repo}-common >= 1.9.1-36
-Requires: %{repo}-rhel-push-plugin
 
 # RE: rhbz#1195804 - ensure min NVR for selinux-policy
 Requires: selinux-policy >= %{selinux_policyver}
-Requires: %{repo}-selinux >= 1.9.1-28
-Requires: %{repo}-forward-journald >= 1.9.1-28
+
+Requires: %{repo}-selinux >= %{docker_ver}-%{docker_rel}
+Requires: %{repo}-forward-journald >= %{docker_ver}-%{docker_rel}
+Requires: %{repo}-common >= %{docker_ver}-%{docker_rel}
+Requires: %{repo}-rhel-push-plugin = %{version}-%{release}
 
 # Resolves: rhbz#1045220
 Requires: xz
@@ -534,6 +539,10 @@ exit 0
 %{_bindir}/v1.10-migrator-local
 
 %changelog
+* Tue Apr 26 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-17
+- update docker dependency NVRs
+- define docker_ver and docker_rel macros for 'docker' VR
+
 * Tue Apr 26 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-16
 - Resolves: #1330714 d-s-s: continue replacing docker with
 docker-latest, but retain docker_devmapper_data_dir
