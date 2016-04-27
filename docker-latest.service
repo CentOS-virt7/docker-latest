@@ -4,7 +4,6 @@ Documentation=http://docs.docker.com
 After=network.target
 Wants=docker-latest-storage-setup.service
 Requires=rhel-push-plugin.socket
-Conflicts=docker.service
 
 [Service]
 Type=notify

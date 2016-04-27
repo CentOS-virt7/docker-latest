@@ -11,7 +11,7 @@
 
 # macros for 'docker' package VR
 %global docker_ver 1.9.1
-%global docker_rel 37
+%global docker_rel 38
 
 # docker builds in a checksum of dockerinit into docker,
 # so stripping the binaries breaks docker
@@ -68,7 +68,7 @@
 
 Name: %{repo}-latest
 Version: 1.10.3
-Release: 17%{?dist}
+Release: 18%{?dist}
 Summary: Automates deployment of containerized applications
 License: ASL 2.0
 URL: https://%{provider}.%{provider_tld}/projectatomic/%{repo}
@@ -283,9 +283,9 @@ rename %{repo} %{name} *
 popd
 cp contrib/syntax/vim/LICENSE LICENSE-vim-syntax
 cp contrib/syntax/vim/README.md README-vim-syntax.md
-go-md2man -in %{repo}-novolume-plugin-%{commit4}/man/%{repo}-novolume-plugin.8.md -out %{name}-novolume-plugin.8
+go-md2man -in %{repo}-novolume-plugin-%{commit4}/man/%{repo}-novolume-plugin.8.md -out %{repo}-novolume-plugin.8
 go-md2man -in rhel-push-plugin-%{commit5}/man/rhel-push-plugin.8.md -out rhel-push-plugin.8
-go-md2man -in %{repo}-lvm-plugin-%{commit6}/man/%{repo}-lvm-plugin.8.md -out %{name}-lvm-plugin.8
+go-md2man -in %{repo}-lvm-plugin-%{commit6}/man/%{repo}-lvm-plugin.8.md -out %{repo}-lvm-plugin.8
 
 pushd $(pwd)/_build/src
 go build -ldflags "-B 0x$(head -c20 /dev/urandom|od -An -tx1|tr -d ' \n')" github.com/projectatomic/%{repo}-novolume-plugin
@@ -369,11 +369,10 @@ install -p -m 644 %{SOURCE5} %{buildroot}%{_unitdir}
 
 # install novolume-plugin executable, unitfile, socket and man
 install -d %{buildroot}/%{_libexecdir}/%{repo}
-install -p -m 755 _build/src/%{repo}-novolume-plugin %{buildroot}/%{_libexecdir}/%{repo}/%{name}-novolume-plugin
-install -p -m 644 %{repo}-novolume-plugin-%{commit4}/systemd/%{repo}-novolume-plugin.service %{buildroot}%{_unitdir}/%{name}-novolume-plugin.service
-install -p -m 644 %{repo}-novolume-plugin-%{commit4}/systemd/%{repo}-novolume-plugin.socket %{buildroot}%{_unitdir}/%{name}-novolume-plugin.socket
+install -p -m 755 _build/src/%{repo}-novolume-plugin %{buildroot}/%{_libexecdir}/%{repo}/%{repo}-novolume-plugin
+install -p -m 644 %{repo}-novolume-plugin-%{commit4}/systemd/%{repo}-novolume-plugin.s* %{buildroot}%{_unitdir}
 install -d %{buildroot}%{_mandir}/man8
-install -p -m 644 %{name}-novolume-plugin.8 %{buildroot}%{_mandir}/man8
+install -p -m 644 %{repo}-novolume-plugin.8 %{buildroot}%{_mandir}/man8
 
 # install rhel-push-plugin executable, unitfile, socket and man
 install -d %{buildroot}%{_libexecdir}/%{repo}
@@ -385,11 +384,10 @@ install -p -m 644 rhel-push-plugin.8 %{buildroot}%{_mandir}/man8
 
 # install %%{repo}-lvm-plugin executable, unitfile, socket and man
 install -d %{buildroot}/%{_libexecdir}/%{repo}
-install -p -m 755 _build/src/%{repo}-lvm-plugin %{buildroot}/%{_libexecdir}/%{repo}/%{name}-lvm-plugin
-install -p -m 644 %{repo}-lvm-plugin-%{commit6}/systemd/%{repo}-lvm-plugin.service %{buildroot}%{_unitdir}/%{name}-lvm-plugin.service
-install -p -m 644 %{repo}-lvm-plugin-%{commit6}/systemd/%{repo}-lvm-plugin.socket %{buildroot}%{_unitdir}/%{name}-lvm-plugin.socket
+install -p -m 755 _build/src/%{repo}-lvm-plugin %{buildroot}/%{_libexecdir}/%{repo}/%{repo}-lvm-plugin
+install -p -m 644 %{repo}-lvm-plugin-%{commit6}/systemd/%{repo}-lvm-plugin.s* %{buildroot}%{_unitdir}
 install -d %{buildroot}%{_mandir}/man8
-install -p -m 644 %{name}-lvm-plugin.8 %{buildroot}%{_mandir}/man8
+install -p -m 644 %{repo}-lvm-plugin.8 %{buildroot}%{_mandir}/man8
 
 # for additional args
 install -d %{buildroot}%{_sysconfdir}/sysconfig/
@@ -515,9 +513,9 @@ exit 0
 %files -n %{repo}-novolume-plugin
 %license %{repo}-novolume-plugin-%{commit4}/LICENSE
 %doc %{repo}-novolume-plugin-%{commit4}/README.md
-%{_mandir}/man8/%{name}-novolume-plugin.8.gz
-%{_libexecdir}/%{repo}/%{name}-novolume-plugin
-%{_unitdir}/%{name}-novolume-plugin.*
+%{_mandir}/man8/%{repo}-novolume-plugin.8.gz
+%{_libexecdir}/%{repo}/%{repo}-novolume-plugin
+%{_unitdir}/%{repo}-novolume-plugin.*
 
 %files -n %{repo}-rhel-push-plugin
 %license rhel-push-plugin-%{commit5}/LICENSE
@@ -529,9 +527,9 @@ exit 0
 %files -n %{repo}-lvm-plugin
 %license %{repo}-lvm-plugin-%{commit6}/LICENSE
 %doc %{repo}-lvm-plugin-%{commit6}/README.md
-%{_mandir}/man8/%{name}-lvm-plugin.8.gz
-%{_libexecdir}/%{repo}/%{name}-lvm-plugin
-%{_unitdir}/%{name}-lvm-plugin.*
+%{_mandir}/man8/%{repo}-lvm-plugin.8.gz
+%{_libexecdir}/%{repo}/%{repo}-lvm-plugin
+%{_unitdir}/%{repo}-lvm-plugin.*
 
 %files v1.10-migrator
 %license v1.10-migrator-%{commit7}/LICENSE.{code,docs}
@@ -539,6 +537,10 @@ exit 0
 %{_bindir}/v1.10-migrator-local
 
 %changelog
+* Wed Apr 27 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-18
+- use docker-selinux >= 1.9.1-38 (RE: #1331007)
+- prepend novolume and lvm plugin filenames with docker-
+
 * Tue Apr 26 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-17
 - update docker dependency NVRs
 - define docker_ver and docker_rel macros for 'docker' VR
