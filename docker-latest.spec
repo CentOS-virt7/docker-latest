@@ -68,7 +68,7 @@
 
 Name: %{repo}-latest
 Version: 1.10.3
-Release: 18%{?dist}
+Release: 19%{?dist}
 Summary: Automates deployment of containerized applications
 License: ASL 2.0
 URL: https://%{provider}.%{provider_tld}/projectatomic/%{repo}
@@ -228,7 +228,8 @@ popd
 # untar novolume-plugin
 tar zxf %{SOURCE4}
 pushd %{repo}-novolume-plugin-%{commit4}/systemd
-sed -i 's/%{repo}/%{name}/g' %{repo}*
+sed -i 's/Before=%{repo}.service/Before=%{name}.service/g' %{repo}-novolume-plugin.service
+sed -i 's/Requires=%{repo}-novolume-plugin.socket %{repo}.service/Requires=%{repo}-novolume-plugin.socket %{name}.service/g' %{repo}-novolume-plugin.service
 popd
 
 # untar rhel-push-plugin
@@ -245,7 +246,7 @@ mkdir src
 mv g* src/
 popd
 pushd %{repo}-lvm-plugin-%{commit6}/systemd
-sed -i 's/%{repo}/%{name}/g' *
+sed -i 's/Before=%{repo}.service/Before=%{name}.service/g' %{repo}-lvm-plugin.service
 popd
 
 # untar v1.10-migrator
@@ -537,6 +538,9 @@ exit 0
 %{_bindir}/v1.10-migrator-local
 
 %changelog
+* Wed Apr 27 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-19
+- Resolves: #1326374 - correct filenames in novolume and lvm plugin unitfiles
+
 * Wed Apr 27 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-18
 - use docker-selinux >= 1.9.1-38 (RE: #1331007)
 - prepend novolume and lvm plugin filenames with docker-
