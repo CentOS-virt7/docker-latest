@@ -68,7 +68,7 @@
 
 Name: %{repo}-latest
 Version: 1.10.3
-Release: 19%{?dist}
+Release: 20%{?dist}
 Summary: Automates deployment of containerized applications
 License: ASL 2.0
 URL: https://%{provider}.%{provider_tld}/projectatomic/%{repo}
@@ -222,7 +222,7 @@ cp %{SOURCE9} .
 tar zxf %{SOURCE1}
 pushd %{repo}-storage-setup-%{commit1}
 sed -i 's/%{repo}/%{name}/g' %{repo}-storage-setup*
-sed -i 's/%{name}_devmapper_data_dir/%{repo}_devmapper_data_dir/g' %{repo}-storage-setup*
+sed -i 's/%{name}_devmapper_meta_dir/%{repo}_devmapper_meta_dir/g' %{repo}-storage-setup*
 popd
 
 # untar novolume-plugin
@@ -538,6 +538,10 @@ exit 0
 %{_bindir}/v1.10-migrator-local
 
 %changelog
+* Mon May 02 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-20
+- Resolves: #1331855, #1330714 - retain docker_devmapper_meta_dir
+- Release -16 included an incorrect fix
+
 * Wed Apr 27 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-19
 - Resolves: #1326374 - correct filenames in novolume and lvm plugin unitfiles
 
