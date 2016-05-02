@@ -68,7 +68,7 @@
 
 Name: %{repo}-latest
 Version: 1.10.3
-Release: 20%{?dist}
+Release: 21%{?dist}
 Summary: Automates deployment of containerized applications
 License: ASL 2.0
 URL: https://%{provider}.%{provider_tld}/projectatomic/%{repo}
@@ -360,9 +360,9 @@ ln -s %{_sysconfdir}/pki/entitlement %{buildroot}%{_datadir}/rhel/secrets/etc-pk
 ln -s %{_sysconfdir}/rhsm %{buildroot}%{_datadir}/rhel/secrets/rhsm
 ln -s %{_sysconfdir}/yum.repos.d/redhat.repo %{buildroot}%{_datadir}/rhel/secrets/rhel7.repo
 
-mkdir -p %{buildroot}/etc/%{name}/certs.d/redhat.{com,io}
-ln -s %{_sysconfdir}/rhsm/ca/redhat-uep.pem %{buildroot}/%{_sysconfdir}/%{name}/certs.d/redhat.com/redhat-ca.crt
-ln -s %{_sysconfdir}/rhsm/ca/redhat-uep.pem %{buildroot}/%{_sysconfdir}/%{name}/certs.d/redhat.io/redhat-ca.crt
+mkdir -p %{buildroot}%{_sysconfdir}/%{name}/certs.d/redhat.{com,io}
+ln -s %{_sysconfdir}/rhsm/ca/redhat-uep.pem %{buildroot}%{_sysconfdir}/%{name}/certs.d/redhat.com/redhat-ca.crt
+ln -s %{_sysconfdir}/rhsm/ca/redhat-uep.pem %{buildroot}%{_sysconfdir}/%{name}/certs.d/redhat.io/redhat-ca.crt
 
 # install systemd/init scripts
 install -d %{buildroot}%{_unitdir}
@@ -389,6 +389,8 @@ install -p -m 755 _build/src/%{repo}-lvm-plugin %{buildroot}/%{_libexecdir}/%{re
 install -p -m 644 %{repo}-lvm-plugin-%{commit6}/systemd/%{repo}-lvm-plugin.s* %{buildroot}%{_unitdir}
 install -d %{buildroot}%{_mandir}/man8
 install -p -m 644 %{repo}-lvm-plugin.8 %{buildroot}%{_mandir}/man8
+mkdir -p %{buildroot}%{_sysconfdir}/%{repo}
+install -p -m 644 %{repo}-lvm-plugin-%{commit6}%{_sysconfdir}/%{repo}/%{repo}-lvm-plugin %{buildroot}%{_sysconfdir}/%{repo}/%{repo}-lvm-plugin
 
 # for additional args
 install -d %{buildroot}%{_sysconfdir}/sysconfig/
@@ -528,6 +530,7 @@ exit 0
 %files -n %{repo}-lvm-plugin
 %license %{repo}-lvm-plugin-%{commit6}/LICENSE
 %doc %{repo}-lvm-plugin-%{commit6}/README.md
+%config(noreplace) %{_sysconfdir}/%{repo}/%{repo}-lvm-plugin
 %{_mandir}/man8/%{repo}-lvm-plugin.8.gz
 %{_libexecdir}/%{repo}/%{repo}-lvm-plugin
 %{_unitdir}/%{repo}-lvm-plugin.*
@@ -538,6 +541,9 @@ exit 0
 %{_bindir}/v1.10-migrator-local
 
 %changelog
+* Mon May 02 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-21
+- Resolves: #1328588 - ship lvm-plugin sysconfig file
+
 * Mon May 02 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-20
 - Resolves: #1331855, #1330714 - retain docker_devmapper_meta_dir
 - Release -16 included an incorrect fix
