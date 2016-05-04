@@ -4,6 +4,18 @@
 OPTIONS='--selinux-enabled --log-driver=journald'
 DOCKER_CERT_PATH=/etc/docker
 
+# If you want to add your own registry to be used for docker search and docker
+# pull use the ADD_REGISTRY option to list a set of registries, each prepended
+# with --add-registry flag. The first registry added will be the first registry
+# searched.
+ADD_REGISTRY='--add-registry registry.access.redhat.com'
+
+# If you want to block registries from being used, uncomment the BLOCK_REGISTRY
+# option and give it a set of registries, each prepended with --block-registry
+# flag. For example adding docker.io will stop users from downloading images
+# from docker.io
+# BLOCK_REGISTRY='--block-registry'
+
 # Enable insecure registry communication by appending the registry URL
 # to the INSECURE_REGISTRY variable below and uncommenting it
 # INSECURE_REGISTRY='--insecure-registry '

@@ -11,7 +11,7 @@
 
 # macros for 'docker' package VR
 %global docker_ver 1.9.1
-%global docker_rel 38
+%global docker_rel 40
 
 # docker builds in a checksum of dockerinit into docker,
 # so stripping the binaries breaks docker
@@ -30,7 +30,7 @@
 
 # docker
 %global git0 https://github.com/projectatomic/%{repo}
-%global commit0 7fd4fb01be119f611719c6d3e41d1ac57cc731cd
+%global commit0 86bbf842e425c6567c726912852976ccfa947e75
 %global shortcommit0 %(c=%{commit0}; echo ${c:0:7})
 
 # d-s-s
@@ -51,7 +51,7 @@
 
 # docker-lvm-plugin
 %global git6 https://github.com/projectatomic/%{repo}-lvm-plugin
-%global commit6 7eb53d570dbdeefd5217e9cf084e35d6dbc2cda1
+%global commit6 3253f53a791f61397fa77478904c87460a9258ca
 %global shortcommit6 %(c=%{commit6}; echo ${c:0:7})
 
 # v1.10-migrator
@@ -68,7 +68,7 @@
 
 Name: %{repo}-latest
 Version: 1.10.3
-Release: 21%{?dist}
+Release: 22%{?dist}
 Summary: Automates deployment of containerized applications
 License: ASL 2.0
 URL: https://%{provider}.%{provider_tld}/projectatomic/%{repo}
@@ -541,11 +541,19 @@ exit 0
 %{_bindir}/v1.10-migrator-local
 
 %changelog
+* Tue May 03 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-22
+- Resolves: #1328588, ship /etc/docker/docker-lvm-plugin config file
+- Resolves: #1333123, include ADD_REGISTRY and BLOCK_REGISTRY variables in
+sysconfig and unitfile
+From: Antonio Murdaca <runcom@redhat.com>
+- built docker projectatomic/rhel7-1.10.3 commit 86bbf84
+- built docker-lvm-plugin commit 3253f53
+
 * Mon May 02 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-21
 - Resolves: #1328588 - ship lvm-plugin sysconfig file
 
 * Mon May 02 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-20
-- Resolves: #1331855, #1330714 - retain docker_devmapper_meta_dir
+- Resolves: #1331855, #1330714, #1329220 - retain docker_devmapper_meta_dir
 - Release -16 included an incorrect fix
 
 * Wed Apr 27 2016 Lokesh Mandvekar <lsm5@redhat.com> - 1.10.3-19
